@@ -61,6 +61,15 @@ public final class TestAll {
                 }
             }
         });
+        run("media renderer (DLNA/UPnP)", new Runnable() {
+            public void run() {
+                try {
+                    DlnaTests.run();
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        });
         run("resampler", new Runnable() {
             public void run() {
                 testResampler();
@@ -439,6 +448,47 @@ public final class TestAll {
             send(out, new Event("audio-chunk", Event.map("rate", 16000, "width", 2, "channels", 1), new byte[64]));
             send(out, Event.of("audio-stop"));
             check(next(in).type.equals("played"), "announcement acknowledged");
+            check(waitFor(new java.util.concurrent.Callable<Boolean>() {
+                public Boolean call() {
+                    return Boolean.valueOf(!core.isBusy() && "idle".equals(core.status.pipeline));
+                }
+            }, 1000), "idle after the announcement");
+
+            // a chime followed directly by the spoken text (how assist_satellite.announce sends it, in other
+            // formats than ours): the satellite stays busy until the second stream has been played too
+            int begins0 = speaker.begins;
+            send(out, Event.of("audio-start", "rate", 48000, "width", 2, "channels", 2));
+            send(out, new Event("audio-chunk", Event.map("rate", 48000, "width", 2, "channels", 2), new byte[400]));
+            send(out, Event.of("audio-stop"));
+            send(out, Event.of("audio-start", "rate", 22050, "width", 2, "channels", 1));
+            check(next(in).type.equals("played"), "chime acknowledged");
+            check(core.isBusy(), "still busy: the second stream is not finished");
+            check(!core.onWakeDetected("echo"), "no wake word while an announcement is still playing");
+            send(out, new Event("audio-chunk", Event.map("rate", 22050, "width", 2, "channels", 1), new byte[200]));
+            send(out, Event.of("audio-stop"));
+            check(next(in).type.equals("played"), "spoken text acknowledged");
+            check(waitFor(new java.util.concurrent.Callable<Boolean>() {
+                public Boolean call() {
+                    return Boolean.valueOf(!core.isBusy() && "idle".equals(core.status.pipeline));
+                }
+            }, 1000), "idle after both streams");
+            check(speaker.begins - begins0 == 2 && speaker.rate == 22050, "speaker got both streams in order");
+
+            // while the media renderer plays, the wake word stays off but a manual request still works
+            core.setExternalAudio(true);
+            check(core.isBusy(), "busy while the media renderer plays");
+            check(core.onWakeDetected("manual"), "manual request is allowed while media plays");
+            next(in);
+            next(in);
+            next(in);
+            send(out, Event.of("error", "text", "boom"));
+            check(next(in).type.equals("audio-stop"), "audio-stop after the error");
+            core.setExternalAudio(false);
+            check(waitFor(new java.util.concurrent.Callable<Boolean>() {
+                public Boolean call() {
+                    return Boolean.valueOf(!core.isBusy());
+                }
+            }, 1000), "idle once the media renderer is quiet");
 
             // a new connection replaces the old one
             Socket ha2 = new Socket("127.0.0.1", server.getPort());

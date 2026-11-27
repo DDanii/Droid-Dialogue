@@ -11,6 +11,12 @@ final class Config {
     static volatile int sensitivity = 50;
     /** Microphone gain in tenths: 10 = 1.0x, 20 = 2.0x, 100 = 10x. */
     static volatile int gainTenths = 20;
+    /** Also show up as a media player (DLNA speaker) in Home Assistant. Read when the service starts. */
+    static volatile boolean speakerEnabled = true;
+    /** Identity of the DLNA speaker. Generated once and kept, Home Assistant recognizes the device by it. */
+    static volatile String upnpUuid = "";
+    /** Port of the speaker's description and control URLs; another free port is used if this one is taken. */
+    static final int UPNP_PORT = 49152;
 
     private Config() {
     }
@@ -21,6 +27,13 @@ final class Config {
         wakeEnabled = p.getBoolean("wakeEnabled", true);
         sensitivity = p.getInt("sensitivity", 50);
         gainTenths = p.getInt("gainTenths", 20);
+        speakerEnabled = p.getBoolean("speakerEnabled", true);
+        String id = p.getString("upnpUuid", "");
+        if (id.length() == 0) {
+            id = java.util.UUID.randomUUID().toString();
+            p.edit().putString("upnpUuid", id).commit();
+        }
+        upnpUuid = id;
     }
 
     static void save(SharedPreferences p) {
@@ -30,6 +43,8 @@ final class Config {
                 .putBoolean("wakeEnabled", wakeEnabled)
                 .putInt("sensitivity", sensitivity)
                 .putInt("gainTenths", gainTenths)
+                .putBoolean("speakerEnabled", speakerEnabled)
+                .putString("upnpUuid", upnpUuid)
                 .commit();
     }
 

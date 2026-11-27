@@ -6,5 +6,5 @@ OUT="${TMPDIR:-/tmp}/wyoming-legacy-test-classes"
 rm -rf "$OUT"
 mkdir -p "$OUT"
 javac -Xlint:-options -d "$OUT" \
-  $(find src/org/wyominglegacy/core src/org/wyominglegacy/wake test -name '*.java')
+  $(find src/org/wyominglegacy/core src/org/wyominglegacy/wake src/org/wyominglegacy/dlna test -name '*.java')
 java -cp "$OUT" org.wyominglegacy.test.TestAll

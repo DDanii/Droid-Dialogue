@@ -34,8 +34,11 @@ public final class SatelliteCore {
     private boolean streaming;
     private long streamStartedAt;
     private long pipelineStartedAt;
-    private boolean ttsPlaying;
+    /** Audio streams from Home Assistant that were started and whose "played" has not been sent yet. */
+    private int ttsStreams;
     private long ttsStartedAt;
+    /** Set by the media renderer while it plays something, so the wake word does not listen to it. */
+    private volatile boolean externalAudio;
 
     public SatelliteCore(String name, String version, Speaker speaker) {
         this.name = name;
@@ -98,28 +101,40 @@ public final class SatelliteCore {
     private void resetLocked() {
         streaming = false;
         pipelineStartedAt = 0;
-        ttsPlaying = false;
+        ttsStreams = 0;
         status.pipeline = "idle";
     }
 
     // ------------------------------------------------------------------ called by the mic thread
 
-    /** True while a pipeline is running or a reply is playing; the wake word detector must stay quiet. */
+    /**
+     * True while a pipeline is running, a reply or announcement is playing, or the media renderer is
+     * playing; the wake word detector must stay quiet then.
+     */
     public synchronized boolean isBusy() {
+        return pipelineBusyLocked() || externalAudio;
+    }
+
+    /** The media renderer (see the dlna package) tells us when it starts and stops playing. */
+    public void setExternalAudio(boolean playing) {
+        externalAudio = playing;
+    }
+
+    private boolean pipelineBusyLocked() {
         long now = System.currentTimeMillis();
         if (pipelineStartedAt != 0 && now - pipelineStartedAt > PIPELINE_TIMEOUT_MS) {
             endPipelineLocked("timeout");
         }
-        if (ttsPlaying && now - ttsStartedAt > TTS_TIMEOUT_MS) {
-            ttsPlaying = false;
+        if (ttsStreams > 0 && now - ttsStartedAt > TTS_TIMEOUT_MS) {
+            ttsStreams = 0;
         }
-        return pipelineStartedAt != 0 || ttsPlaying;
+        return pipelineStartedAt != 0 || ttsStreams > 0;
     }
 
     /** The wake word was heard (or the user pressed the talk button). Returns false if it was ignored. */
     public synchronized boolean onWakeDetected(String wakeName) {
         Session s = session;
-        if (s == null || s.isClosed() || isBusy()) {
+        if (s == null || s.isClosed() || pipelineBusyLocked()) {
             return false;
         }
         long now = System.currentTimeMillis();
@@ -198,17 +213,19 @@ public final class SatelliteCore {
             Dbg.d("Pipeline error: " + e.data);
             synchronized (this) {
                 stopStreamingLocked();
-                if (!ttsPlaying) {
+                if (ttsStreams == 0) {
                     endPipelineLocked("error");
                 }
             }
         } else if ("audio-start".equals(t)) {
+            // Either the reply of a pipeline or an announcement (assist_satellite.announce), which
+            // Home Assistant sends without any pipeline, sometimes as two streams in a row (chime, text).
             int rate = e.integer("rate", 22050);
             int width = e.integer("width", 2);
             int channels = e.integer("channels", 1);
             synchronized (this) {
                 stopStreamingLocked();
-                ttsPlaying = true;
+                ttsStreams++;
                 ttsStartedAt = System.currentTimeMillis();
                 status.pipeline = "speaking";
             }
@@ -222,16 +239,24 @@ public final class SatelliteCore {
             speaker.end(new Runnable() {
                 public void run() {
                     fs.send(Event.of("played"));
-                    onTtsFinished();
+                    onTtsFinished(fs);
                 }
             });
         }
         // run-satellite, voice-started, synthesize, transcribe, detect, timer-* and anything else are ignored.
     }
 
-    private void onTtsFinished() {
+    private void onTtsFinished(Session from) {
         synchronized (this) {
-            ttsPlaying = false;
+            if (from != session) {
+                return; // the connection this belonged to is gone, its state was reset already
+            }
+            if (ttsStreams > 0) {
+                ttsStreams--;
+            }
+            if (ttsStreams > 0) {
+                return; // another stream is still queued behind this one
+            }
             if (pipelineStartedAt != 0) {
                 endPipelineLocked("played");
             } else {

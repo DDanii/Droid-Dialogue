@@ -10,6 +10,11 @@ final class Shared {
     /** Sample rate the microphone really runs at, for the status line. */
     static volatile String micInfo = "";
 
+    /** The DLNA speaker: its port (-1 when not running), a short state word and a problem text if any. */
+    static volatile int speakerPort = -1;
+    static volatile String speakerState = "off";
+    static volatile String speakerError = "";
+
     static volatile boolean enrollRequested;
     static volatile boolean clearRequested;
     static volatile String enrollMsg = "";

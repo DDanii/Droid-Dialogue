@@ -39,9 +39,11 @@ public class MainActivity extends Activity {
     private EditText portEdit;
     private EditText nameEdit;
     private CheckBox wakeCheck;
+    private CheckBox speakerCheck;
     private SeekBar sensBar;
     private SeekBar gainBar;
     private String ipText = "...";
+    private String ipFirst = "";
     private long ipAt;
 
     private final Runnable ticker = new Runnable() {
@@ -118,6 +120,16 @@ public class MainActivity extends Activity {
             }
         });
         root.addView(wakeCheck);
+
+        speakerCheck = new CheckBox(this);
+        speakerCheck.setText("Also be a speaker (media player) in Home Assistant. Applies at the next Start");
+        speakerCheck.setChecked(Config.speakerEnabled);
+        speakerCheck.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            public void onCheckedChanged(CompoundButton b, boolean checked) {
+                Config.speakerEnabled = checked;
+            }
+        });
+        root.addView(speakerCheck);
 
         root.addView(button("Record sample", new View.OnClickListener() {
             public void onClick(View v) {
@@ -295,6 +307,7 @@ public class MainActivity extends Activity {
             if (now - ipAt > 5000) {
                 List<String> ips = NetUtil.localIPv4();
                 ipText = ips.isEmpty() ? "(no network address)" : join(ips);
+                ipFirst = ips.isEmpty() ? "" : ips.get(0);
                 ipAt = now;
             }
             sb.append("Add to Home Assistant: ").append(ipText).append("  port ").append(Config.port).append('\n');
@@ -309,6 +322,19 @@ public class MainActivity extends Activity {
             String mic = Shared.micError.length() > 0 ? Shared.micError
                     : (Shared.micInfo.length() > 0 ? "ok, " + Shared.micInfo : "starting");
             sb.append("Microphone: ").append(mic).append('\n');
+
+            int speakerPort = Shared.speakerPort;
+            if (Shared.speakerError.length() > 0) {
+                sb.append("Speaker: ").append(Shared.speakerError).append('\n');
+            }
+            if (speakerPort > 0) {
+                sb.append("Speaker (").append(Shared.speakerState).append("): in Home Assistant add the DLNA Digital Media "
+                        + "Renderer integration. If it is not offered, use http://")
+                        .append(ipFirst.length() > 0 ? ipFirst : "<address>").append(':').append(speakerPort)
+                        .append("/description.xml\n");
+            } else if ("starting".equals(Shared.speakerState)) {
+                sb.append("Speaker: starting\n");
+            }
         }
 
         int have = Shared.templateCount;
