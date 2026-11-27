@@ -111,7 +111,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p dist
-          cp build/wyoming-legacy-satellite-*.apk dist/
+          cp build/droid-dialogue-satellite-*.apk dist/
           (cd dist && sha256sum ./*.apk > SHA256SUMS.txt)
           ls -l dist
 
@@ -158,7 +158,7 @@ jobs:
             gh release create "$TAG" dist/* \
               --repo "$REPO" \
               --target "$SHA" \
-              --title "Wyoming Legacy Satellite $TAG" \
+              --title "Droid Dialogue Satellite $TAG" \
               --notes "Android APK for Android 4.0 and newer. SHA-256 checksums are in SHA256SUMS.txt." \
               --generate-notes \
               "${FLAGS[@]}"

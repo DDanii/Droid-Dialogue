@@ -31,7 +31,7 @@ echo "Using $PLATFORM and build-tools $BT"
 VERSION_NAME="${VERSION_NAME:-1.0.0}"
 VERSION_CODE="${VERSION_CODE:-1}"
 OUT=build
-APK="$OUT/wyoming-legacy-satellite-$VERSION_NAME.apk"
+APK="$OUT/droid-dialogue-satellite-$VERSION_NAME.apk"
 
 rm -rf "$OUT"
 mkdir -p "$OUT/classes" "$OUT/dex"

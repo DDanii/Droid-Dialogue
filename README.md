@@ -1,4 +1,4 @@
-# Wyoming Legacy Satellite
+# Droid Dialogue Satellite
 
 A Home Assistant voice satellite for **old Android phones (Android 4.0 and newer, API 14)**.
 It speaks the [Wyoming protocol](https://github.com/rhasspy/wyoming), so Home Assistant treats the phone
@@ -29,7 +29,7 @@ The phone is also a **speaker for Home Assistant**: it can speak announcements, 
 Download the APK from the latest release (or from the artifacts of a build run), then:
 
 ```
-adb install -r wyoming-legacy-satellite-*.apk
+adb install -r droid-dialogue-satellite-*.apk
 ```
 
 or copy it to the phone and open it (allow "Unknown sources" in the settings first).
@@ -63,7 +63,7 @@ Nothing to set up beyond adding the satellite. Home Assistant does not turn a Wy
 
 **2. Media player (DLNA).** For that, the phone also announces itself as a DLNA / UPnP media renderer.
 In Home Assistant open **Settings, Devices & services**. The *DLNA Digital Media Renderer* integration finds
-devices by itself and shows the phone as **Discovered**, named "Wyoming Legacy <model> Speaker". If it does not
+devices by itself and shows the phone as **Discovered**, named "Droid Dialogue <model> Speaker". If it does not
 show up, use **Add integration, DLNA Digital Media Renderer** and, if it asks for the device's address, give
 the one the app shows under *Speaker*, for example `http://192.168.1.50:49152/description.xml`. You then get a
 `media_player` with play, pause, stop, volume and mute, and the `media_player.play_media` and `tts.speak`
@@ -104,7 +104,7 @@ Or do it by hand. You need a JDK 17+, the Android SDK (`ANDROID_HOME`) with a pl
 
 ```
 ./test.sh     # desktop tests, no Android needed
-./build.sh    # build/wyoming-legacy-satellite-<version>.apk
+./build.sh    # build/droid-dialogue-satellite-<version>.apk
 ```
 
 The build uses the SDK command line tools directly (javac, d8, aapt2, zipalign, apksigner) with `--min-api 14`
@@ -116,7 +116,7 @@ Android only updates an app in place when it is signed with the same key.
 ## How it works
 
 - `core/`: the Wyoming protocol and the satellite state machine. Home Assistant connects to the phone. It sends
-  `describe`, the phone answers with `info` (a satellite called "Wyoming Legacy <model>"), and Home Assistant
+  `describe`, the phone answers with `info` (a satellite called "Droid Dialogue <model>"), and Home Assistant
   keeps the link alive with `ping` and `pong`. On the wake word the phone sends `detection`, `run-pipeline`
   (from speech recognition to speech output), `audio-start` and `audio-chunk`s of 16 kHz mono 16-bit audio.
   When Home Assistant sends `transcript` the phone stops streaming; the reply arrives as `audio-start`,
@@ -147,5 +147,5 @@ connected, and stops when Home Assistant has the transcript.
   discovery is unavailable, another app may be using the SSDP port.
 - *`tts.speak` or `play_media` is silent:* check that Home Assistant's Internal URL is a plain `http://` address
   with an IP address (not a `.local` name) that the phone can open, and that the media volume of the phone is
-  not zero. The Android log (`adb logcat -s WyomingLegacy`) shows what the speaker received.
+  not zero. The Android log (`adb logcat -s DroidDialogue`) shows what the speaker received.
 - *Android 14 and newer:* the microphone permission must be granted before **Start**.

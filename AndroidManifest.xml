@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="org.wyominglegacy.satellite">
+    package="org.droiddialogue.satellite">
 
     <uses-sdk
         android:minSdkVersion="14"
@@ -18,11 +18,11 @@
     <application
         android:allowBackup="false"
         android:icon="@android:drawable/sym_def_app_icon"
-        android:label="Wyoming Legacy Satellite"
+        android:label="Droid Dialogue Satellite"
         android:theme="@android:style/Theme.DeviceDefault">
 
         <activity
-            android:name="org.wyominglegacy.app.MainActivity"
+            android:name="org.droiddialogue.app.MainActivity"
             android:exported="true"
             android:launchMode="singleTop">
             <intent-filter>
@@ -32,7 +32,7 @@
         </activity>
 
         <service
-            android:name="org.wyominglegacy.app.SatelliteService"
+            android:name="org.droiddialogue.app.SatelliteService"
             android:exported="false"
             android:foregroundServiceType="microphone" />
     </application>

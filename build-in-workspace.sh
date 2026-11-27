@@ -5,7 +5,7 @@
 #
 #     bash build-in-workspace.sh
 #
-# The result is build/wyoming-legacy-satellite-<version>.apk
+# The result is build/droid-dialogue-satellite-<version>.apk
 #
 # Optional environment:
 #   ANDROID_HOME        where the SDK lives or should be installed (default: ~/android-sdk)
@@ -111,7 +111,7 @@ fi
 say "Building the APK"
 bash ./build.sh
 
-APK="$(ls -1 build/wyoming-legacy-satellite-*.apk | head -n 1)"
+APK="$(ls -1 build/droid-dialogue-satellite-*.apk | head -n 1)"
 say "Done: $APK"
 echo "Install on a phone with USB debugging:   adb install -r \"$APK\""
 echo "Or download it from this workspace and open it on the phone (allow 'Unknown sources')."
